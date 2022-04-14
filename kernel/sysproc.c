@@ -83,6 +83,7 @@ sys_kill(void)
   return kill(pid);
 }
 
+
 // return how many clock tick interrupts have occurred
 // since start.
 uint64
@@ -94,4 +95,14 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_pause_system(void)
+{
+  int seconds;
+
+  if(argint(0, &seconds) < 0)
+    return -1;
+  return pause_system(seconds);
 }

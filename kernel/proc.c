@@ -579,7 +579,7 @@ int
 kill(int pid)
 {
   struct proc *p;
-
+  printf("asd\n");
   for(p = proc; p < &proc[NPROC]; p++){
     acquire(&p->lock);
     if(p->pid == pid){
@@ -595,6 +595,7 @@ kill(int pid)
   }
   return -1;
 }
+
 
 // Copy to either a user address, or kernel address,
 // depending on usr_dst.
@@ -653,4 +654,11 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+int
+pause_system(int seconds)
+{
+  printf("abc\n");
+  return 0;
 }

@@ -15,6 +15,8 @@ struct proc *initproc;
 int nextpid = 1;
 struct spinlock pid_lock;
 
+uint pauseUntil;
+
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
@@ -444,22 +446,23 @@ scheduler(void)
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
+    if(!pauseUntil || ticks>pauseUntil){
+        for(p = proc; p < &proc[NPROC]; p++) {
+            acquire(&p->lock);
+            if(p->state == RUNNABLE) {
+              // Switch to chosen process.  It is the process's job
+              // to release its lock and then reacquire it
+              // before jumping back to us.
+              p->state = RUNNING;
+              c->proc = p;
+              swtch(&c->context, &p->context);
 
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-      release(&p->lock);
+              // Process is done running for now.
+              // It should have changed its p->state before coming back.
+              c->proc = 0;
+          }
+          release(&p->lock);
+        }
     }
   }
 }
@@ -579,7 +582,6 @@ int
 kill(int pid)
 {
   struct proc *p;
-  printf("asd\n");
   for(p = proc; p < &proc[NPROC]; p++){
     acquire(&p->lock);
     if(p->pid == pid){
@@ -659,6 +661,7 @@ procdump(void)
 int
 pause_system(int seconds)
 {
-  printf("abc\n");
+  pauseUntil=ticks+seconds*10;
+  yield();
   return 0;
 }

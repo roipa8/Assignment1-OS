@@ -433,6 +433,68 @@ wait(uint64 addr)
   }
 }
 
+void round_robin(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  
+  c->proc = 0;
+  for(;;){
+    // Avoid deadlock by ensuring that devices can interrupt.
+    intr_on();
+    if(!pauseUntil || ticks>pauseUntil) {
+      for(p = proc; p < &proc[NPROC]; p++) {
+          acquire(&p->lock);
+          if(p->state == RUNNABLE) {
+            // Switch to chosen process.  It is the process's job
+            // to release its lock and then reacquire it
+            // before jumping back to us.
+            p->last_ticks = ticks;
+            p->state = RUNNING;
+            c->proc = p;
+            swtch(&c->context, &p->context);
+
+            // Process is done running for now.
+            // It should have changed its p->state before coming back.
+            c->proc = 0;
+          }
+        release(&p->lock);
+      }
+    }
+  }
+}
+
+void SJF(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  
+  c->proc = 0;
+  for(;;){
+    // Avoid deadlock by ensuring that devices can interrupt.
+    intr_on();
+    if(!pauseUntil || ticks>pauseUntil) {
+      for(p = proc; p < &proc[NPROC]; p++) {
+          acquire(&p->lock);
+          if(p->state == RUNNABLE) {
+            // Switch to chosen process.  It is the process's job
+            // to release its lock and then reacquire it
+            // before jumping back to us.
+            p->last_ticks = ticks;
+            p->state = RUNNING;
+            c->proc = p;
+            swtch(&c->context, &p->context);
+
+            // Process is done running for now.
+            // It should have changed its p->state before coming back.
+            c->proc = 0;
+          }
+        release(&p->lock);
+      }
+    }
+  }
+}
+
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -443,45 +505,18 @@ wait(uint64 addr)
 void
 scheduler(void)
 {
-  struct proc *p;
-  struct cpu *c = mycpu();
-  
-  c->proc = 0;
-  #if CPUS == 1
-    printf("A\n");
-    // round_robin();
-  #elif CPUS == 5
-    printf("B\n");
-    // SJF();
-  #elif CPUS == 6
-    ptinrf("C\n");
-    // FCFS();
-  #else
-    panic("Wrong SCHEDFLAG input");
+  #ifdef DEFAULT
+    round_robin();
   #endif
-  for(;;){
-    // Avoid deadlock by ensuring that devices can interrupt.
-    intr_on();
-    if(!pauseUntil || ticks>pauseUntil){
-        for(p = proc; p < &proc[NPROC]; p++) {
-            acquire(&p->lock);
-            if(p->state == RUNNABLE) {
-              // Switch to chosen process.  It is the process's job
-              // to release its lock and then reacquire it
-              // before jumping back to us.
-              p->last_ticks = ticks;
-              p->state = RUNNING;
-              c->proc = p;
-              swtch(&c->context, &p->context);
 
-              // Process is done running for now.
-              // It should have changed its p->state before coming back.
-              c->proc = 0;
-          }
-          release(&p->lock);
-        }
-    }
-  }
+  #ifdef SJF
+    SJF();
+  #endif
+
+  #ifdef FCFS
+    printf("C\n");
+    // FCFS();
+  #endif
 }
 
 // Switch to scheduler.  Must hold only p->lock

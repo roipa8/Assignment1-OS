@@ -665,3 +665,15 @@ pause_system(int seconds)
   yield();
   return 0;
 }
+
+int
+kill_system(void)
+{
+  struct proc *p;
+  int init_pid = initproc->pid;
+  for(p = proc; p < &proc[NPROC]; p++) {
+    if (p->pid != init_pid)
+      kill(p->pid);
+  }
+  return 0;
+}

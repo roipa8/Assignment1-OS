@@ -17,6 +17,8 @@ struct spinlock pid_lock;
 
 uint pauseUntil;
 
+int rate = 5;
+
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
@@ -120,6 +122,8 @@ allocproc(void)
 
 found:
   p->pid = allocpid();
+  p->mean_ticks = 0;
+  p->last_ticks = 0;
   p->state = USED;
 
   // Allocate a trapframe page.
@@ -443,6 +447,18 @@ scheduler(void)
   struct cpu *c = mycpu();
   
   c->proc = 0;
+  #if CPUS == 1
+    printf("A\n");
+    // round_robin();
+  #elif CPUS == 5
+    printf("B\n");
+    // SJF();
+  #elif CPUS == 6
+    ptinrf("C\n");
+    // FCFS();
+  #else
+    panic("Wrong SCHEDFLAG input");
+  #endif
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
@@ -453,6 +469,7 @@ scheduler(void)
               // Switch to chosen process.  It is the process's job
               // to release its lock and then reacquire it
               // before jumping back to us.
+              p->last_ticks = ticks;
               p->state = RUNNING;
               c->proc = p;
               swtch(&c->context, &p->context);
@@ -500,6 +517,7 @@ yield(void)
 {
   struct proc *p = myproc();
   acquire(&p->lock);
+  p->last_ticks = ticks - p->last_ticks;
   p->state = RUNNABLE;
   sched();
   release(&p->lock);
@@ -545,6 +563,7 @@ sleep(void *chan, struct spinlock *lk)
 
   // Go to sleep.
   p->chan = chan;
+  p->last_ticks = ticks - p->last_ticks;
   p->state = SLEEPING;
 
   sched();
@@ -670,10 +689,11 @@ int
 kill_system(void)
 {
   struct proc *p;
-  int init_pid = initproc->pid;
+  int pid;
   for(p = proc; p < &proc[NPROC]; p++) {
-    if (p->pid != init_pid)
-      kill(p->pid);
+    pid = p->pid;
+    if (pid != 1 && pid != 2)
+      kill(pid);
   }
   return 0;
 }

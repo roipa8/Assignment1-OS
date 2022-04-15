@@ -94,6 +94,8 @@ struct proc {
   int pid;                     // Process ID
   // wait_lock must be held when using this:
   struct proc *parent;         // Parent process
+  uint mean_ticks;
+  uint last_ticks;
 
   // these are private to the process, so p->lock need not be held.
   uint64 kstack;               // Virtual address of kernel stack

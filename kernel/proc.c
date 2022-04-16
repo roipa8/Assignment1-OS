@@ -437,7 +437,6 @@ void round_robin(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
-  
   c->proc = 0;
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
@@ -449,7 +448,6 @@ void round_robin(void)
             // Switch to chosen process.  It is the process's job
             // to release its lock and then reacquire it
             // before jumping back to us.
-            p->last_ticks = ticks;
             p->state = RUNNING;
             c->proc = p;
             swtch(&c->context, &p->context);
@@ -464,11 +462,51 @@ void round_robin(void)
   }
 }
 
-void SJF(void)
+void sjf(void)
+{
+  struct proc *p;
+  struct proc *min_p;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  for(;;){
+    // Avoid deadlock by ensuring that devices can interrupt.
+    intr_on();
+    if(!pauseUntil || ticks>pauseUntil) {
+      min_p = proc;
+      for(p = proc+1; p < &proc[NPROC]; p++) {
+        printf("%d\n", p->pid);
+        acquire(&p->lock);
+        if(p->state == RUNNABLE) {
+          if(min_p->mean_ticks > p->mean_ticks)
+            min_p = p;
+        }
+        release(&p->lock);
+      }
+      return;
+      // printf("%d\n", min_p->pid);
+      // printf("%d\n", min_p->mean_ticks);
+      // printf("%d\n", min_p->last_ticks);
+
+      acquire(&min_p->lock);
+      // Switch to chosen process.  It is the process's job
+      // to release its lock and then reacquire it
+      // before jumping back to us.
+      min_p->last_ticks = ticks;
+      min_p->state = RUNNING;
+      c->proc = min_p;
+      swtch(&c->context, &min_p->context);
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+      release(&min_p->lock);
+    }
+  }
+}
+
+void fcfs(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
-  
   c->proc = 0;
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
@@ -480,7 +518,6 @@ void SJF(void)
             // Switch to chosen process.  It is the process's job
             // to release its lock and then reacquire it
             // before jumping back to us.
-            p->last_ticks = ticks;
             p->state = RUNNING;
             c->proc = p;
             swtch(&c->context, &p->context);
@@ -506,16 +543,18 @@ void
 scheduler(void)
 {
   #ifdef DEFAULT
+    printf("Round_Robin\n");
     round_robin();
   #endif
 
   #ifdef SJF
-    SJF();
+    printf("SJF\n");
+    sjf();
   #endif
 
   #ifdef FCFS
-    printf("C\n");
-    // FCFS();
+    printf("FCFS\n");
+    fcfs();
   #endif
 }
 
@@ -553,6 +592,7 @@ yield(void)
   struct proc *p = myproc();
   acquire(&p->lock);
   p->last_ticks = ticks - p->last_ticks;
+  p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
   p->state = RUNNABLE;
   sched();
   release(&p->lock);
@@ -599,6 +639,7 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->last_ticks = ticks - p->last_ticks;
+  p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
   p->state = SLEEPING;
 
   sched();

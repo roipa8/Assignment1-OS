@@ -466,6 +466,7 @@ void sjf(void)
 {
   struct proc *p;
   struct proc *min_p;
+  struct proc *run_proc = myproc();
   struct cpu *c = mycpu();
   c->proc = 0;
   for(;;){
@@ -474,7 +475,6 @@ void sjf(void)
     if(!pauseUntil || ticks>pauseUntil) {
       min_p = proc;
       for(p = proc+1; p < &proc[NPROC]; p++) {
-        printf("%d\n", p->pid);
         acquire(&p->lock);
         if(p->state == RUNNABLE) {
           if(min_p->mean_ticks > p->mean_ticks)
@@ -482,19 +482,27 @@ void sjf(void)
         }
         release(&p->lock);
       }
-      return;
-      // printf("%d\n", min_p->pid);
-      // printf("%d\n", min_p->mean_ticks);
-      // printf("%d\n", min_p->last_ticks);
+      // printf("PID: %d\n", min_p->pid);
+      // printf("MEAN_TICKS: %d\n", min_p->mean_ticks);
+      // printf("LAST_TICKS: %d\n", min_p->last_ticks);
 
       acquire(&min_p->lock);
       // Switch to chosen process.  It is the process's job
       // to release its lock and then reacquire it
       // before jumping back to us.
-      min_p->last_ticks = ticks;
+      if (min_p != run_proc) {
+        min_p->last_ticks = ticks;
+        run_proc = min_p;
+        printf("PID: %d\n", run_proc->pid);
+        printf("start: %d\n", ticks);
+      }
       min_p->state = RUNNING;
       c->proc = min_p;
       swtch(&c->context, &min_p->context);
+      // printf("between: %d\n", ticks);
+      min_p->last_ticks = ticks - min_p->last_ticks;
+      // printf("after: %d\n", min_p->last_ticks);
+      min_p->mean_ticks = (((10 - rate) * min_p->mean_ticks) + rate * min_p->last_ticks) / 10;
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
@@ -591,8 +599,8 @@ yield(void)
 {
   struct proc *p = myproc();
   acquire(&p->lock);
-  p->last_ticks = ticks - p->last_ticks;
-  p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
+  // p->last_ticks = ticks - p->last_ticks;
+  // p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
   p->state = RUNNABLE;
   sched();
   release(&p->lock);
@@ -638,8 +646,8 @@ sleep(void *chan, struct spinlock *lk)
 
   // Go to sleep.
   p->chan = chan;
-  p->last_ticks = ticks - p->last_ticks;
-  p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
+  // p->last_ticks = ticks - p->last_ticks;
+  // p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
   p->state = SLEEPING;
 
   sched();

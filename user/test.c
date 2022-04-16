@@ -67,8 +67,6 @@ void env_freq() {
     env(10e1, 10e1, "env_freq");
 }
 
-
-
 int main(int argc, char** argv){
     env_freq();
     env_large();

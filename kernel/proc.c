@@ -18,6 +18,8 @@ struct spinlock pid_lock;
 uint pauseUntil;
 uint sleeping_processes_mean = 0;
 uint running_processes_mean = 0;
+uint runnable_processes_mean=0;
+uint proccesses_exit_counter=0;
 int rate = 5;
 
 extern void forkret(void);
@@ -254,6 +256,7 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
+  p->temp = ticks;
   p->last_runnable_time=ticks;
 
   release(&p->lock);
@@ -325,6 +328,7 @@ fork(void)
 
   acquire(&np->lock);
   np->state = RUNNABLE;
+  np->temp = ticks;
   np->last_runnable_time=ticks;
   release(&np->lock);
 
@@ -383,7 +387,16 @@ exit(int status)
 
   p->xstate = status;
   p->state = ZOMBIE;
-
+  p->running_time = p->running_time + (ticks - p->temp);
+  if(p->pid>2){
+    running_processes_mean = ((running_processes_mean * proccesses_exit_counter) + p->running_time) / (proccesses_exit_counter+1);
+    runnable_processes_mean = ((runnable_processes_mean * proccesses_exit_counter) + p->runnable_time) / (proccesses_exit_counter+1);
+    sleeping_processes_mean = ((sleeping_processes_mean * proccesses_exit_counter) + p->sleeping_time) / (proccesses_exit_counter+1);
+    proccesses_exit_counter++;
+    printf("Proccess %d - running_processes_mean: %d\n",p->pid, running_processes_mean);
+    printf("Proccess %d - runnable_processes_mean: %d\n",p->pid, runnable_processes_mean);
+    printf("Proccess %d - sleeping_processes_mean: %d\n",p->pid, sleeping_processes_mean);
+  }
   release(&wait_lock);
 
   // Jump into the scheduler, never to return.
@@ -457,6 +470,8 @@ void round_robin(void)
             // before jumping back to us.
             p->state = RUNNING;
             c->proc = p;
+            p->runnable_time = p->runnable_time + (ticks - p->temp);
+            p->temp=ticks;
             swtch(&c->context, &p->context);
 
             // Process is done running for now.
@@ -505,6 +520,8 @@ void sjf(void)
       }
       min_p->state = RUNNING;
       c->proc = min_p;
+      min_p->runnable_time = min_p->runnable_time + (ticks - min_p->temp);
+      min_p->temp=ticks;
       swtch(&c->context, &min_p->context);
       // printf("between: %d\n", ticks);
       min_p->last_ticks = ticks - min_p->last_ticks;
@@ -547,6 +564,8 @@ void fcfs(void)
       // before jumping back to us.
       min_p->state = RUNNING;
       c->proc = min_p;
+      min_p->runnable_time = min_p->runnable_time + (ticks - min_p->temp);
+      min_p->temp=ticks;
       swtch(&c->context, &min_p->context);
       min_p->last_runnable_time=ticks;
       // Process is done running for now.
@@ -619,6 +638,8 @@ yield(void)
   // p->last_ticks = ticks - p->last_ticks;
   // p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
   p->state = RUNNABLE;
+  p->running_time = p->running_time + (ticks - p->temp);
+  p->temp=ticks; 
   // p->last_runnable_time=ticks;
   sched();
   release(&p->lock);
@@ -667,7 +688,8 @@ sleep(void *chan, struct spinlock *lk)
   // p->last_ticks = ticks - p->last_ticks;
   // p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
   p->state = SLEEPING;
-
+  p->running_time = p->running_time + (ticks - p->temp);
+  p->temp=ticks; 
   sched();
 
   // Tidy up.
@@ -690,7 +712,9 @@ wakeup(void *chan)
       acquire(&p->lock);
       if(p->state == SLEEPING && p->chan == chan) {
         p->state = RUNNABLE;
-        p->last_runnable_time=ticks;
+        p->sleeping_time = p->sleeping_time + (ticks - p->temp);
+        p->temp = ticks;
+        p->last_runnable_time = ticks;
       }
       release(&p->lock);
     }
@@ -711,6 +735,8 @@ kill(int pid)
       if(p->state == SLEEPING){
         // Wake process from sleep().
         p->state = RUNNABLE;
+        p->sleeping_time = p->sleeping_time + (ticks - p->temp);
+        p->temp = ticks;
         p->last_runnable_time=ticks;
       }
       release(&p->lock);

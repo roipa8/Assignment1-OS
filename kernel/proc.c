@@ -524,17 +524,18 @@ void fcfs(void)
     intr_on();
     if(!pauseUntil || ticks>pauseUntil) {
       min_p = proc;
-      printf("PID: %d, last_rnnable_time: %d\n", min_p->pid,min_p->last_runnable_time);
+      // printf("PID: %d, last_rnnable_time: %d\n", min_p->pid,min_p->last_runnable_time);
       for(p = proc+1; p < &proc[NPROC]; p++) {
         acquire(&p->lock);
         if(p->state == RUNNABLE) {
-          printf("PID: %d, last_rnnable_time: %d\n", p->pid,p->last_runnable_time);
+          // printf("PID: %d, last_rnnable_time: %d\n", p->pid,p->last_runnable_time);
           if(min_p->last_runnable_time >= p->last_runnable_time)
             min_p = p;
         }
         release(&p->lock);
       }
       acquire(&min_p->lock);
+      // printf("XXXXXX RUNNING PID: %d, last_rnnable_time: %d\n", min_p->pid,min_p->last_runnable_time);
       // printf("PID: %d\n", min_p->pid);
       // Switch to chosen process.  It is the process's job
       // to release its lock and then reacquire it
@@ -542,12 +543,12 @@ void fcfs(void)
       min_p->state = RUNNING;
       c->proc = min_p;
       swtch(&c->context, &min_p->context);
+      min_p->last_runnable_time=ticks;
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
       release(&min_p->lock);
     }
-
   }
 }
 
@@ -613,7 +614,7 @@ yield(void)
   // p->last_ticks = ticks - p->last_ticks;
   // p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
   p->state = RUNNABLE;
-  p->last_runnable_time=ticks;
+  // p->last_runnable_time=ticks;
   sched();
   release(&p->lock);
 }

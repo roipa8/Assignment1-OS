@@ -16,7 +16,8 @@ int nextpid = 1;
 struct spinlock pid_lock;
 
 uint pauseUntil;
-
+uint sleeping_processes_mean = 0;
+uint running_processes_mean = 0;
 int rate = 5;
 
 extern void forkret(void);
@@ -124,6 +125,10 @@ found:
   p->pid = allocpid();
   p->mean_ticks = 0;
   p->last_ticks = 0;
+  p->sleeping_time = 0;
+  p->runnable_time = 0;
+  p->running_time = 0;
+  p->temp = 0;
   p->state = USED;
 
   // Allocate a trapframe page.

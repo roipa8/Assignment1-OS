@@ -97,7 +97,10 @@ struct proc {
   uint mean_ticks;
   uint last_ticks;
   uint last_runnable_time;
-
+  uint sleeping_time;
+  uint runnable_time;
+  uint running_time;
+  uint temp;
   // these are private to the process, so p->lock need not be held.
   uint64 kstack;               // Virtual address of kernel stack
   uint64 sz;                   // Size of process memory (bytes)

@@ -96,6 +96,7 @@ struct proc {
   struct proc *parent;         // Parent process
   uint mean_ticks;
   uint last_ticks;
+  uint last_runnable_time;
 
   // these are private to the process, so p->lock need not be held.
   uint64 kstack;               // Virtual address of kernel stack

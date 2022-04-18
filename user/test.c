@@ -45,7 +45,7 @@ void env(int size, int interval, char* env_name) {
         pid = fork();
     }
     for (int i = 0; i < loop_size; i++) {
-        if (i % (int) (loop_size / 10e0) == 0) {
+        if (i % (int)(loop_size / 10e0) == 0) {
         	if (pid == 0) {
         		printf("%s %d/%d completed.\n", env_name, i, loop_size);
         	} else {
@@ -57,6 +57,8 @@ void env(int size, int interval, char* env_name) {
         }
     }
     printf("\n");
+    printf("Stats of %s\n", env_name);
+    print_stats();
 }
 
 void env_large() {
@@ -68,9 +70,9 @@ void env_freq() {
 }
 
 int main(int argc, char** argv){
-    env_freq();
-    env_large();
-    // example_pause_system(10,5,100);
-    // example_kill_system(10,100);
+    // env_freq();
+    // env_large();
+    example_pause_system(10,5,100);
+    example_kill_system(10,100);
     exit(0);
 }

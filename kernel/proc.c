@@ -566,16 +566,23 @@ void fcfs(void)
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
     if(!pauseUntil || ticks>pauseUntil) {
-      min_p = proc;
-      // printf("PID: %d, last_rnnable_time: %d\n", min_p->pid,min_p->last_runnable_time);
-      for(p = proc+1; p < &proc[NPROC]; p++) {
+      int firstRunnable = 1;
+      for(p = proc; p < &proc[NPROC]; p++) {
         acquire(&p->lock);
         if(p->state == RUNNABLE) {
-          // printf("PID: %d, last_rnnable_time: %d\n", p->pid,p->last_runnable_time);
-          if(min_p->last_runnable_time >= p->last_runnable_time)
-            min_p = p;
+          if(firstRunnable){
+            min_p=p;
+            firstRunnable = 0;
+          }
+          else{
+            if(min_p->last_runnable_time > p->last_runnable_time)
+              min_p = p;
+          }
         }
         release(&p->lock);
+      }
+      if(firstRunnable){
+        continue;
       }
       acquire(&min_p->lock);
       // printf("XXXXXX RUNNING PID: %d, last_rnnable_time: %d\n", min_p->pid,min_p->last_runnable_time);
@@ -655,6 +662,7 @@ void
 yield(void)
 {
   struct proc *p = myproc();
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXCheck\n");
   acquire(&p->lock);
   // p->last_ticks = ticks - p->last_ticks;
   // p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;

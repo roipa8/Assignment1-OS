@@ -23,6 +23,10 @@ uint running_processes_mean = 0;
 uint runnable_processes_mean = 0;
 uint proccesses_exit_counter = 0;
 
+uint program_time = 0;
+uint start_time = 0;
+uint cpu_utilization = 0;
+
 int rate = 5;
 
 extern void forkret(void);
@@ -64,6 +68,7 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->kstack = KSTACK((int) (p - proc));
   }
+  start_time = ticks;
 }
 
 // Must be called with interrupts disabled,
@@ -396,9 +401,14 @@ exit(int status)
     runnable_processes_mean = ((runnable_processes_mean * proccesses_exit_counter) + p->runnable_time) / (proccesses_exit_counter+1);
     sleeping_processes_mean = ((sleeping_processes_mean * proccesses_exit_counter) + p->sleeping_time) / (proccesses_exit_counter+1);
     proccesses_exit_counter++;
+    program_time += p->running_time;
+    cpu_utilization = program_time / (ticks - start_time);
     printf("Proccess %d - running_processes_mean: %d\n",p->pid, running_processes_mean);
     printf("Proccess %d - runnable_processes_mean: %d\n",p->pid, runnable_processes_mean);
     printf("Proccess %d - sleeping_processes_mean: %d\n",p->pid, sleeping_processes_mean);
+    printf("Program time: %d\n",program_time);
+    printf("CPU utilization: %d\n",cpu_utilization);
+    printf("(ticks - start_time): %d\n", ticks - start_time);
   }
   release(&wait_lock);
 

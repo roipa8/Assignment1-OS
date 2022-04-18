@@ -16,10 +16,13 @@ int nextpid = 1;
 struct spinlock pid_lock;
 
 uint pauseUntil;
+struct proc* paused_p;
+
 uint sleeping_processes_mean = 0;
 uint running_processes_mean = 0;
-uint runnable_processes_mean=0;
-uint proccesses_exit_counter=0;
+uint runnable_processes_mean = 0;
+uint proccesses_exit_counter = 0;
+
 int rate = 5;
 
 extern void forkret(void);
@@ -461,8 +464,8 @@ void round_robin(void)
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
-    if(!pauseUntil || ticks>pauseUntil) {
-      for(p = proc; p < &proc[NPROC]; p++) {
+    for(p = proc; p < &proc[NPROC]; p++) {
+      if(!pauseUntil || ticks>pauseUntil) {
           acquire(&p->lock);
           if(p->state == RUNNABLE) {
             // Switch to chosen process.  It is the process's job
@@ -480,6 +483,7 @@ void round_robin(void)
           }
         release(&p->lock);
       }
+      else p = paused_p;
     }
   }
 }
@@ -810,7 +814,8 @@ procdump(void)
 int
 pause_system(int seconds)
 {
-  pauseUntil=ticks+seconds*10;
+  pauseUntil = ticks + seconds*10;
+  paused_p = myproc();
   yield();
   return 0;
 }

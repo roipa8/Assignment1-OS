@@ -400,6 +400,8 @@ exit(int status)
     running_processes_mean = ((running_processes_mean * proccesses_exit_counter) + p->running_time) / (proccesses_exit_counter+1);
     runnable_processes_mean = ((runnable_processes_mean * proccesses_exit_counter) + p->runnable_time) / (proccesses_exit_counter+1);
     sleeping_processes_mean = ((sleeping_processes_mean * proccesses_exit_counter) + p->sleeping_time) / (proccesses_exit_counter+1);
+    printf("PID: %d\ncounter: %d\n", p->pid, proccesses_exit_counter);
+    printf("SLEEPING TIME: %d\n", p->sleeping_time);
     proccesses_exit_counter++;
     program_time += p->running_time;
     cpu_utilization = (program_time * 100) / (ticks - start_time);
@@ -846,6 +848,5 @@ print_stats(void)
     printf("Sleeping Processes Mean: %d\n", sleeping_processes_mean);
     printf("Program Time: %d\n",program_time);
     printf("CPU Utilization: %d%\n",cpu_utilization);
-    printf("ACTUAL TIME: %d\n", ticks - start_time);
     return 0;
 }

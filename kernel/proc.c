@@ -16,7 +16,6 @@ int nextpid = 1;
 struct spinlock pid_lock;
 
 uint pauseUntil;
-struct proc* paused_p;
 
 uint sleeping_processes_mean = 0;
 uint running_processes_mean = 0;
@@ -400,8 +399,8 @@ exit(int status)
     running_processes_mean = ((running_processes_mean * proccesses_exit_counter) + p->running_time) / (proccesses_exit_counter+1);
     runnable_processes_mean = ((runnable_processes_mean * proccesses_exit_counter) + p->runnable_time) / (proccesses_exit_counter+1);
     sleeping_processes_mean = ((sleeping_processes_mean * proccesses_exit_counter) + p->sleeping_time) / (proccesses_exit_counter+1);
-    printf("PID: %d\ncounter: %d\n", p->pid, proccesses_exit_counter);
-    printf("SLEEPING TIME: %d\n", p->sleeping_time);
+    // printf("PID: %d\ncounter: %d\n", p->pid, proccesses_exit_counter);
+    // printf("SLEEPING TIME: %d\n", p->sleeping_time);
     proccesses_exit_counter++;
     program_time += p->running_time;
     cpu_utilization = (program_time * 100) / (ticks - start_time);
@@ -471,7 +470,7 @@ void round_robin(void)
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
     for(p = proc; p < &proc[NPROC]; p++) {
-      if(!pauseUntil || ticks>pauseUntil) {
+      if(!pauseUntil || ticks>pauseUntil || p->pid == 1 || p->pid == 2) {
           acquire(&p->lock);
           if(p->state == RUNNABLE) {
             // Switch to chosen process.  It is the process's job
@@ -489,7 +488,6 @@ void round_robin(void)
           }
         release(&p->lock);
       }
-      else p = paused_p;
     }
   }
 }
@@ -662,7 +660,6 @@ void
 yield(void)
 {
   struct proc *p = myproc();
-  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXCheck\n");
   acquire(&p->lock);
   // p->last_ticks = ticks - p->last_ticks;
   // p->mean_ticks = (((10 - rate) * p->mean_ticks) + rate * p->last_ticks) / 10;
@@ -840,8 +837,9 @@ int
 pause_system(int seconds)
 {
   pauseUntil = ticks + seconds*10;
-  paused_p = myproc();
-  if (paused_p->pid > 2)
+  struct proc* p = myproc();
+  printf("p->pid: %d\n", p->pid);
+  if (p->pid > 2)
     yield();
   return 0;
 }

@@ -8,9 +8,6 @@ void example_pause_system(int interval, int pause_seconds, int loop_size) {
     	fork();
     }
     int pid=getpid();
-    if (pid!=0) {
-        wait(&pid);
-    }
     for (int i = 0; i < loop_size; i++) {
         if (i % interval == 0 && pid==getpid()) {
             printf("pause system %d/%d completed.\n", i, loop_size);
@@ -75,9 +72,9 @@ void env_freq() {
 }
 
 int main(int argc, char** argv){
-    env_freq();
-    env_large();
-    // example_pause_system(10,5,100);
-    // example_kill_system(10,100);
+    // env_freq();
+    // env_large();
+    example_pause_system(10,5,100);
+    example_kill_system(10,100);
     exit(0);
 }

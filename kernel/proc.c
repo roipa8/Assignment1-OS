@@ -395,10 +395,10 @@ exit(int status)
   p->xstate = status;
   p->state = ZOMBIE;
   p->running_time = p->running_time + (ticks - p->temp);
-  if(p->pid>2){
-    running_processes_mean = ((running_processes_mean * proccesses_exit_counter) + p->running_time) / (proccesses_exit_counter+1);
-    runnable_processes_mean = ((runnable_processes_mean * proccesses_exit_counter) + p->runnable_time) / (proccesses_exit_counter+1);
-    sleeping_processes_mean = ((sleeping_processes_mean * proccesses_exit_counter) + p->sleeping_time) / (proccesses_exit_counter+1);
+  if(p->pid > 2){
+    running_processes_mean = ((running_processes_mean * proccesses_exit_counter) + p->running_time) / (proccesses_exit_counter + 1);
+    runnable_processes_mean = ((runnable_processes_mean * proccesses_exit_counter) + p->runnable_time) / (proccesses_exit_counter + 1);
+    sleeping_processes_mean = ((sleeping_processes_mean * proccesses_exit_counter) + p->sleeping_time) / (proccesses_exit_counter + 1);
     proccesses_exit_counter++;
     program_time += p->running_time;
     cpu_utilization = (program_time * 100) / (ticks - start_time);

@@ -71,10 +71,35 @@ void env_freq() {
     env(10e1, 10e1, "env_freq");
 }
 
+
+void mytest() {
+    int n_forks = 2;
+    int pid;
+    int status;
+    for (int i = 0; i < n_forks; i++) {
+    	pid = fork();
+    }
+    if (pid != 0) {
+        wait(&status);
+        printf("My Son Died: %d\n", pid);
+        pause_system(5);
+        printf("Done pauses\n");
+    }
+    else {
+        for(int i = 0; i < 100; i++)
+            printf("Child %d is running...\n", getpid());
+        pause_system(5);
+        printf("Child %d woke up, now dying\n", getpid());
+    }
+    print_stats();
+}
+
+
 int main(int argc, char** argv){
     // env_freq();
     // env_large();
-    example_pause_system(10,5,100);
+    // example_pause_system(10,5,100);
     // example_kill_system(10,1000);
+    // mytest();
     exit(0);
 }

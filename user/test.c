@@ -98,7 +98,7 @@ void mytest() {
 int main(int argc, char** argv){
     // env_freq();
     // env_large();
-    // example_pause_system(10,5,100);
+    // example_pause_system(10,5,1000);
     // example_kill_system(10,1000);
     // mytest();
     exit(0);

@@ -76,12 +76,17 @@ void mytest() {
     int n_forks = 2;
     int pid;
     int status;
+    int main_pid = getpid();
     for (int i = 0; i < n_forks; i++) {
     	pid = fork();
     }
     if (pid != 0) {
         wait(&status);
         printf("My Son Died: %d\n", pid);
+        if (getpid() == main_pid) {
+            wait(&status);
+            printf("My Second Son Died\n");
+        }
         pause_system(5);
         printf("Done pauses\n");
     }
@@ -95,11 +100,35 @@ void mytest() {
 }
 
 
+void check() {
+    int pid;
+    pid = fork();
+    if (pid == 0) {
+        for (int i = 0; i < 1000; i++)
+            printf("ChildChildChild 1\n");
+    }
+    else {
+        pid = fork();
+        if (pid == 0) {
+            for (int i = 0; i < 1000; i++)
+                printf("Child 2\n");
+        }
+        else {
+            for (int i = 0; i < 200; i++)
+                printf("Parent\n");
+            pause_system(10);
+        }
+    }
+}
+
+
+
 int main(int argc, char** argv){
     // env_freq();
     // env_large();
-    // example_pause_system(10,5,1000);
+    example_pause_system(10,5,1000);
     // example_kill_system(10,1000);
     // mytest();
+    // check();
     exit(0);
 }
